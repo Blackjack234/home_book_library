@@ -1,14 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Book } from './schema/books.schema';
 import mongoose from 'mongoose';
 import { CreateDto } from './dto/createBook.dto';
 import { updateDto } from './dto/updateBook.dto';
+import { Cache } from 'cache-manager';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 @Injectable()
 export class BooksService {
   constructor(
     @InjectModel(Book.name) private bookModel: mongoose.Model<Book>,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   async findAllBook(): Promise<Book[] | null> {
@@ -26,12 +29,18 @@ export class BooksService {
 
   async findBooksById(id: string): Promise<Book | null> {
     try {
+      const value = await this.cacheManager.get<Book>(id);
+
+      if (value) {
+        return value;
+      }
+
       const result = await this.bookModel.findById({ _id: id });
 
       if (!result) {
         return null;
       }
-
+      await this.cacheManager.set(id, result, 100000);
       return result;
     } catch (e) {
       throw new Error(`somthing went wrong ${e.message}`);
@@ -40,11 +49,16 @@ export class BooksService {
 
   async create(book: CreateDto): Promise<Book | Error | null | boolean> {
     try {
-      const result = this.bookModel.create(book);
+      const result: Book = await this.bookModel.create(book);
 
       if (!result) {
         return null;
       }
+
+      const id = JSON.stringify(result._id);
+
+      await this.cacheManager.set(id, result, 100000);
+      // console.log(await this.cacheManager.get(id));
 
       return result;
     } catch (e) {

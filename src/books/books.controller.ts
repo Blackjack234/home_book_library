@@ -7,13 +7,18 @@ import {
   Param,
   Post,
   Put,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { BooksService } from './books.service';
 import { Book } from './schema/books.schema';
 import { CreateDto } from './dto/createBook.dto';
 import { updateDto } from './dto/updateBook.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { CacheInterceptor } from '@nestjs/cache-manager';
 
 @Controller('books')
+@UseInterceptors(CacheInterceptor)
 export class BooksController {
   constructor(private bookService: BooksService) {}
 
@@ -27,6 +32,7 @@ export class BooksController {
   }
 
   @Post('create')
+  @UseGuards(AuthGuard())
   async createBook(@Body() book: CreateDto) {
     try {
       const result = await this.bookService.create(book);
