@@ -11,6 +11,7 @@ import { registerDto } from './dto/register.dto.';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
 import { loginDto } from './dto/login.dto';
+import { updateUserDto } from './dto/updateUser.dto';
 
 @Injectable()
 export class UserService {
@@ -68,6 +69,28 @@ export class UserService {
     } catch (e) {
       if (e instanceof UnauthorizedException) throw e;
       throw new InternalServerErrorException(`Failed to login: ${e?.message}`);
+    }
+  }
+
+  async update(updateUserDto: updateUserDto, id: string) {
+    try {
+      const result = await this.UserModel.findByIdAndUpdate(
+        { _id: id },
+        updateUserDto,
+        {
+          new: true,
+          runValidators: true,
+        },
+      );
+
+      if (!result) {
+        throw new UnauthorizedException('somthing went wrong.');
+      }
+      return result;
+      // console.log(result,"+++++++++result");
+    } catch (e) {
+      if (e instanceof UnauthorizedException) throw e;
+      throw new InternalServerErrorException(`Failed to update : ${e.message}`);
     }
   }
 }

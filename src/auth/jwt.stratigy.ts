@@ -20,13 +20,14 @@ export class jwtstategy extends PassportStrategy(Strategy) {
   async validate(payload) {
     const { id } = payload;
 
-    const user = await this.UserModel.find({ _id: id });
+    const user = await this.UserModel.findOne({ _id: id });
 
     if (!user) {
       throw new UnauthorizedException(
         'Please login first to access this endpoint.',
       );
     }
+    // console.log(JSON.stringify(user));
 
     return user;
   }
